@@ -1,0 +1,55 @@
+---
+- name: add group
+  group: 
+    name: '{{ item.groups }}'
+    state: present
+  with_items: '{{ group_to_add }}'
+
+- name: add user
+  user: 
+    name: '{{ item.name }}'
+    shell: '{{ item.shell }}'
+    group: '{{ item.group}}'
+    groups: '{{ item.groups}}'
+    password: '{{ item.password }}'
+    create_home: yes
+  with_items: '{{ user_to_add }}'
+
+- name: add user keys
+  authorized_key:
+    user: '{{ item.name }}'
+    key: '{{ item.key }}'
+    state: present
+    exclusive: True
+  with_items: '{{ user_to_add }}'
+
+- name: create ssh directory
+  file:
+    path: /home/{{ item.name }}/.ssh
+    state: directory
+    owner: '{{ item.name }}'
+    group: '{{ item.name }}'
+    mode: '0755'
+  with_items: '{{ user_to_add }}'
+
+- name: copy id_rsa
+  copy:
+    src: '{{ item.key_file }}'
+    dest: /home/{{ item.name }}/.ssh/id_rsa
+    decrypt: yes
+    owner: '{{ item.name }}'
+    group: '{{ item.name }}'
+    mode: '0600'
+  with_items: '{{ user_to_add }}'
+
+- name: copy pub_id_rsa
+  copy:
+    src: '{{ item.pub_key_file }}'
+    dest: /home/{{ item.name }}/.ssh/id_rsa.pub
+    decrypt: yes
+    owner: '{{ item.name }}'
+    group: '{{ item.name }}'
+    mode: '0600'
+  with_items: '{{ user_to_add }}'
+...
+...

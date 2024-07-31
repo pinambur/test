@@ -1,0 +1,59 @@
+---
+
+- name: create tmp directory
+  file:
+    path: /tmp/python
+    state: directory
+
+- name: download python source code
+  ansible.builtin.get_url:
+    url: https://www.python.org/ftp/python/{{ python.version }}/Python-{{ python.version }}.tgz
+    dest: "/tmp/python.tgz"
+
+- name: extract python source code
+  unarchive:
+    src: "/tmp/python.tgz"
+    dest: "/tmp/python"
+    remote_src: yes
+    extra_opts:
+    - --strip-components=1
+
+- name: configure
+  shell: "./configure {{ python.configure_options }}"
+  args:
+    chdir: /tmp/python
+    creates: "/tmp/python/Makefile"
+
+- name: make
+  make:
+    chdir: /tmp/python
+
+# - name: make install
+  # make:
+    # chdir: /tmp/python
+    # target: install
+
+- name: configure
+  shell: "make install"
+  args:
+    chdir: /tmp/python
+    creates: "{{ python.install_dir }}"
+
+- name: extract major version
+  set_fact:
+    python_major_version: "{{ python.version.split('.')[:2] | join('.') }}"
+
+- name: upgrade pip
+  command: "{{ python.install_dir }}/bin/pip{{ python_major_version }} install --upgrade pip"
+  register: pip_upgrade_result
+  failed_when: pip_upgrade_result.rc != 0
+  changed_when: pip_upgrade_result.rc == 0
+#  notify: restart
+
+- name: install pip packages
+  command: "{{ python.install_dir }}/bin/pip{{ python_major_version }} install {{ python.pip_packages }}"
+  register: pip_packages_install_result
+  failed_when: pip_packages_install_result.rc != 0
+  changed_when: pip_packages_install_result.rc == 0
+#  notify: restart
+...

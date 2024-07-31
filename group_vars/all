@@ -1,0 +1,152 @@
+---
+
+package_list:
+  - libfreetype6
+  - libfreetype6-dev
+  - zlib1g
+  - zlib1g-dev
+  - libxml2
+  - libxml2-dev
+  - libxslt1-dev
+  - libxslt1.1
+  - gcc
+  - curl
+  - make
+  - libcurl4-openssl-dev
+  - libssl-dev
+  - mc
+  - wget
+  - aptitude
+  - unzip
+  - htop
+  - nload
+  - libffi-dev
+#  - libmariadbclient-dev
+  - libmariadb-dev
+  - gnupg2
+  - pkg-config
+  - tcl
+  - git
+  - sendmail
+  - openssl
+#  - python-minimal
+  - python2-minimal
+  - python-setuptools
+  - screen
+  - ethtool
+  - openssl
+  - nodejs
+  - npm
+
+group_to_add:
+  - name: 'deploy'
+    groups: 'deploy'
+
+user_to_add: 
+  - name: 'deploy'
+    shell: '/bin/bash'
+    group: 'deploy'
+    groups: 'sudo'
+    password: ''
+    key: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          61336563376339613735396265343431326563303435633039383934393466623032656631356335
+          6337393836396364653662363731336531636365386665380a326362633430663830656633366561
+          64653435386362336139303666313037383235343336326131373934643166626463643333363137
+          3831633531303537340a366565383261656530333563343732656438353937306139633837663636
+          31326434323961643339613136376562386330336235633333623839373561616135376263343763
+          39353833316430653033646530366363353635623137383963323532356165633832366461373834
+          62326562623263313030323463323639386430643264393464636164396666653961393930313837
+          30353763373863346437666232316133383438383738316265663835303862663831306539326664
+          39343564373732353965656131643265353363393939386634656437633462366662
+    key_file: dev_id_rsa
+    pub_key_file: dev_id_rsa.pub
+
+user_to_del: 
+  - name: 'debian'
+
+timezone: "UTC"
+
+sysctl_settings:
+  - { key: net.ipv4.ip_local_port_range, value: "1024 65535" }
+  - { key: fs.nr_open, value: 2000000 }
+  - { key: fs.file-max, value: 5000000 }
+
+pam_limits:
+  - { domain: "root", limit_type: soft, limit_item: nofile, value: 6500536 }
+  - { domain: "root", limit_type: hard, limit_item: nofile, value: 6500536 }
+  - { domain: "*", limit_type: soft, limit_item: nofile, value: 40000000 }
+  - { domain: "*", limit_type: hard, limit_item: nofile, value: 40000000 }
+
+python:
+  version: "3.12.4"
+  download_url: "https://www.python.org/ftp/python/${python_version}/Python-${python_version}.tgz"
+  install_dir: "/opt/python3"
+  user: "deploy"
+  group: "deploy"
+  configure_options: "--prefix=/opt/python3"
+  pip_packages: "pycurl mysqlclient mysql.connector certifi redis sentry-sdk"
+
+mysql:
+  user:
+    name: root
+    priv: "*.*:ALL,GRANT"
+    password: !vault |
+              $ANSIBLE_VAULT;1.1;AES256
+              35616465316436666334643833316138656532303463393461656439323930656634393230333435
+              3265373639316437613731306632383034313530336530300a363737366466353836393861313662
+              61623161393933613861363566393934366536646565326538323234383662386633633964633963
+              3732356331393166630a633732626565366439383335373333393762343235303237653035626638
+              3138
+  packages:
+    - mysql-server
+    - python3-pymysql
+  version: "5.7.22"
+  debian_version: "buster"
+  repo: "http://repo.mysql.com/apt/debian/"
+  repo_items:
+    - mysql-5.7
+    - mysql-tools
+    - mysql-apt-config
+
+#  repo_key: "https://repo.mysql.com/RPM-GPG-KEY-mysql-2023"
+  repo_key: "B7B3B788A8D3785C"
+  keyserver: "keyserver.ubuntu.com"
+  port: "3306"
+  host: "localhost"
+  unix_socket: "/var/run/mysqld/mysqld.sock"
+
+php:
+  composer_tmp_path: "/tmp/composer.phar"
+  composer_install_dir: "/usr/local/bin/"
+  composer_url: "https://getcomposer.org/installer"
+  packages:
+    - php7.4-fpm
+    - php7.4-apcu
+    - php7.4-bcmath
+    - php7.4-bz2
+    - php7.4-cgi
+    - php7.4-cli
+    - php7.4-common
+    - php7.4-curl
+    - php7.4-dba
+    - php7.4-enchant
+    - php7.4-intl
+    - php7.4-gd
+    - php7.4-imap
+    - php7.4-json
+    - php7.4-mbstring
+    - php7.4-mysql
+    - php7.4-odbc
+    - php7.4-opcache
+    - php7.4-phpdbg
+    - php7.4-redis
+    - php7.4-snmp
+    - php7.4-soap
+    - php7.4-sqlite3
+    - php7.4-tidy
+    - php7.4-xml
+    - php7.4-xsl
+    - php7.4-zip
+
+...

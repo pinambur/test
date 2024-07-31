@@ -1,0 +1,7 @@
+---
+- name: del user
+  user:
+    name: "{{ item.name }}"
+    state: absent
+  with_items: '{{ user_to_del }}'
+...

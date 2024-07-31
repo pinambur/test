@@ -1,0 +1,31 @@
+---
+
+- name: set timezone
+  timezone:
+    name: '{{ timezone }}'
+
+- name: sysctl_settings
+  sysctl:
+    name: '{{ item.key }}'
+    value: '{{ item.value }}'
+    sysctl_set: yes
+    state: present
+    reload: yes
+ #   ignoreerrors: yes
+  when: item in sysctl_settings
+  with_items: '{{ sysctl_settings }}'
+
+- name: pam_limits
+  pam_limits:
+    domain: "{{ item.domain }}"
+    limit_type: "{{ item.limit_type }}"
+    limit_item: "{{ item.limit_item }}"
+    value: "{{ item.value }}"
+  when: item in pam_limits
+  with_items: "{{ pam_limits }}"
+
+- name: install common packages
+  apt: pkg={{ package_list }} update_cache=yes
+  when: package_list is defined
+#  with_items: '{{ package_list }}'
+...

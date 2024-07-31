@@ -1,0 +1,30 @@
+---
+
+- name: Check if Composer is installed.
+  stat: "path={{ php.composer_install_dir }}composer.phar"
+  register: composer_bin
+
+- name: install php
+  apt: name={{ php.packages }} state=latest update_cache=yes
+  when: php.packages is defined
+  with_items: '{{ php.packages }}'
+
+# - name: Download and install Composer into the target directory.
+  # get_url:
+    # url=https://getcomposer.org/composer.phar
+    # dest={{ php.composer_path }}
+    # mode=0755
+
+- name: Download Composer installer.
+  get_url:
+    url: '{{ php.composer_url }}'
+    dest: /tmp/composer-installer.php
+    mode: 0755
+  when: not composer_bin.stat.exists
+
+- name: Run Composer installer.
+  command: php composer-installer.php --install-dir={{ php.composer_install_dir }}
+  args:
+    chdir: /tmp
+  when: not composer_bin.stat.exists
+...

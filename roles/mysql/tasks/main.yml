@@ -1,0 +1,60 @@
+---
+- name: add apt key by id from a keyserver
+  apt_key: 
+    keyserver: '{{ mysql.keyserver }}'
+    id: 0x{{ mysql.repo_key }}
+    keyring: /etc/apt/trusted.gpg.d/mysql.gpg
+
+# - name: One way to avoid apt_key once it is removed from your distro, armored keys should use .asc extension, binary should use .gpg
+  # block:
+    # - name: add apt key
+      # ansible.builtin.get_url:
+        # url: {{ mysql.repo_key }}
+        # dest: /usr/share/keyrings/mysql-apt-config.gpg
+
+    # - name: add apt source
+      # ansible.builtin.apt_repository:
+        # repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/mysql-apt-config.gpg] {{ mysql.repo }} {{ mysql.debian_version }} main"
+        # state: present
+
+- name: install mysql repository
+  apt_repository:
+    repo: 'deb [signed-by=/etc/apt/trusted.gpg.d/mysql.gpg] {{ mysql.repo }} {{ mysql.debian_version }} {{ item }}'
+    state: present
+  when: mysql.repo is defined
+  with_items: '{{ mysql.repo_items }}'
+
+# - name: install mysql-server
+  # apt: name={{ item }} state=latest update_cache=yes
+  # with_items: '{{ mysql.packages }}'
+
+- name: install mysql-server
+  apt: name={{ mysql.packages }} state=latest update_cache=yes
+  when: mysql.packages is defined
+
+- name: update mysql password for root
+  mysql_user:
+    # Update the superuser to have all grants and a password
+    name: '{{ mysql.user.name }}'
+    host: '{{ mysql.host }}'
+    password: '{{ mysql.user.password }}'
+    priv: '{{ mysql.user.priv }}'
+    login_user: '{{ mysql.user.name }}'
+    login_password: ''
+    login_port: '{{ mysql.port }}'
+    login_host: '{{ mysql.host }}'
+    login_unix_socket: '{{ mysql.unix_socket }}'
+    check_implicit_admin: yes
+
+- name: create mysql conf root
+  template:
+    src: my.cnf.j2
+    dest: '/root/.my.cnf'
+
+- name: set mysql superuser password
+  mysql_user:
+    name: '{{ mysql.user.name }}'
+    password: '{{ mysql.user.password }}'
+    check_implicit_admin: true
+  when: mysql.user.password is defined
+...

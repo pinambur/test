@@ -1,0 +1,81 @@
+---
+- name: install lsb-release
+  become: yes
+  apt:
+    name: lsb-release
+    update_cache: yes
+    state: latest
+
+- name: check distrib
+  command: lsb_release -sc
+  register: release_ver
+
+- name: add nginx deb repo 
+  become: yes
+  apt_repository:
+    repo: "deb https://nginx.org/packages/mainline/debian/ {{ release_ver.stdout }} nginx"
+    state: present
+    update_cache: no
+
+- name: download PGP-key
+  become: yes
+  apt_key:
+      url: http://nginx.org/keys/nginx_signing.key
+      state: present
+
+- name: install nginx
+  become: yes
+  apt:
+    name: nginx
+    update_cache: yes
+    state: latest
+
+- name: create directories if they don't exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: deploy
+    group: deploy
+    mode: '0777'
+  loop:
+    - /etc/nginx/projects
+    - /etc/nginx/projects/panels
+
+- name: create directories if they don't exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+#  when: item.stat.exists == false
+  loop:
+    - /etc/nginx/projects_conf
+    - /var/www
+    - /var/www/server
+    - /var/www/server/frontend
+    - /var/www/server/frontend/shared
+    - /var/www/server/frontend/shared/runtime
+    - /var/www/server/frontend/shared/runtime/GeoIP
+
+- name: copy nginx config
+  copy:
+    src: nginx.conf_
+    dest: /etc/nginx/nginx.conf
+    backup: yes
+#    validate: 'nginx -t -c %s'
+#    notify: restart_nginx
+
+- name: test nginx config and ignore if failed
+  command: nginx -t
+  register: nginx_test
+  ignore_errors: yes
+
+# - name: debug on validation failure
+  # debug:
+    # msg: "nginx.conf validation failed"
+  # when: not nginx_test.stdout | regex_search("syntax is ok")
+
+- name: create nginx logrotate
+  template: src=templates/logrotate.d-nginx dest=/etc/logrotate.d/nginx
+...
